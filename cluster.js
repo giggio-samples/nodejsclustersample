@@ -4,14 +4,14 @@ const Koa = require('koa');
 const convert = require('koa-convert');
 const demorado = require('./demorado');
 
-function createServer() {
+function createServer(clusterId) {
   const app = new Koa();
   app.use(function (ctx) {
     return demorado().then(valor => {
-      ctx.body = "Boa noite, iMasters!";
+      ctx.body = `Boa noite, iMasters! (CLUSTER ${clusterId})`;
     });
   });
-  app.listen(3000);
+  app.listen(process.env.PORT);
 }
 
 if (process.argv.indexOf('--cluster') >= 0) {
@@ -21,13 +21,14 @@ if (process.argv.indexOf('--cluster') >= 0) {
       cluster.fork();
     }
     cluster.on('exit', (worker, code, signal) => {
-      console.log(`Worker ${worker.process.pid} morreu! :(`);
+      console.log(`Worker ${worker.id} morreu! :(`);
+      cluster.fork();
     });
   } else {
     console.log(`Iniciando worker ${cluster.worker.id}...`);
-    createServer();
+    createServer(cluster.worker.id);
   }
 } else {
   console.log(`Iniciando worker...`);
-  createServer();
+  createServer(-1);
 }
